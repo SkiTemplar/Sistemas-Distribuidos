@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
+    <option name="confirmBeforeUploading" value="false" />
+    <serverData>
+      <paths name="AWS UBUNTU (7145cbe9-7212-436c-afe1-d450af7564b1)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.pCIP418nms/SistemasDistribuidos" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/../../../../../home/ubuntu/.clion-build/PSD_Dist " />
+            <excludedPath local="true" path="$PROJECT_DIR$/../../../../../home/ubuntu/.clion-build/PSD_Dist " />
+            <excludedPath local="true" path="$PROJECT_DIR$/../../../../../home/ubuntu/.clion-build" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/cmake-build-debug-aws-ubuntu" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/cmake-build-debug-ec2" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
