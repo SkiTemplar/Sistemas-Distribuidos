@@ -1,15 +1,21 @@
- 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(server LANGUAGES CXX)
-add_executable(server utils.h utils.cpp server.cpp clientManager.cpp clientManager.h)
+project(Chat LANGUAGES CXX)
+
+add_executable(server
+        utils.cpp utils.h
+        clientManager.cpp clientManager.h
+        server.cpp
+)
 target_link_libraries(server pthread)
 
-
-project(client LANGUAGES CXX)
-add_executable(client utils.h utils.cpp client.cpp clientManager.cpp clientManager.h)
+add_executable(client
+        utils.cpp utils.h
+        clientManager.cpp clientManager.h
+        client.cpp
+)
 target_link_libraries(client pthread)

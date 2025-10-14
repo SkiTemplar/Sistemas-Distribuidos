@@ -1,114 +1,102 @@
 #include "utils.h"
-#include <string>
-#include <iostream>
-#include <string>
-#include <vector>
 #include "clientManager.h"
+#include <iostream>
+#include <thread>
+#include <atomic>
+#include <csignal>
 
-using namespace std;
+static std::atomic<bool> running{true};
+static int g_sock = -1;
+static std::string g_user;
 
-//thread que muestra mensajes de otros usuarios
-void leerMensajeTextoExternos(int id)
-{
-	string txt="";
-	string user="";
-	//mientras no cerrar program
-	while(!clientManager::cierreDePrograma){
-	
-		//mirar buffer mensajes de texto
-		while(clientManager::bufferTxt.size()==0) usleep(100); //espera semidurmiente
-		//si hay mensaje
-			//desempaquetar
-			//mostrarlo
-		clientManager::cerrojoBuffers.lock();
-		user=clientManager::desempaquetaTipoTexto(clientManager::bufferTxt);
-		txt=clientManager::desempaquetaTipoTexto(clientManager::bufferTxt);
-		clientManager::cerrojoBuffers.unlock();
-		cout<<user<<" dice:"<<txt<<"\n";
-	}
-	cout<<"Cierre de hilo recepcion de mensajes de clientes\n";
+static void reader_thread(int id){
+    while(running){
+        std::vector<unsigned char> buf;
+        recvMSG<unsigned char>(id, buf);
+        if (buf.empty()) { usleep(10000); continue; }
+        int type = unpack<int>(buf);
+
+        if (type == clientManager::texto){
+            std::string from = clientManager::desempaquetaTipoTexto(buf);
+            std::string txt  = clientManager::desempaquetaTipoTexto(buf);
+            std::cout<<from<<" dice: "<<txt<<"\n";
+        } else if (type == clientManager::shutdown_){
+            (void)clientManager::desempaquetaTipoTexto(buf); // from
+            (void)clientManager::desempaquetaTipoTexto(buf); // txt
+            std::cout<<"[Servidor apagándose]\n";
+            running = false;
+        } else if (type == clientManager::ack){
+            // Almacenar el ACK para que las funciones de envío puedan procesarlo
+            std::lock_guard<std::mutex> lk(clientManager::cerrojoBuffers);
+            clientManager::bufferAcks.clear();
+            pack<int>(clientManager::bufferAcks, type);
+        }
+        // ACK implícito del servidor ya gestionado por él
+    }
 }
 
-
-void recibePaquetesAsync(int id)
-{
-	vector<unsigned char> buffer;
-	//mientras no cerrar program
-	while(!clientManager::cierreDePrograma){
-	
-	//recibir paquete
-		recvMSG(id,buffer);
-		clientManager::msgTypes tipo=unpack<clientManager::msgTypes>(buffer);
-		clientManager::cerrojoBuffers.lock(); //cerrar para rellenar buffers en privado
-		//almacenar paquete
-		switch(tipo){
-			case clientManager::ack:
-				pack(clientManager::bufferAcks,clientManager::ack);
-				break;
-			case clientManager::texto:
-			{
-				string user=clientManager::desempaquetaTipoTexto(buffer);
-				string txt=clientManager::desempaquetaTipoTexto(buffer);
-				pack(clientManager::bufferTxt,user.size());
-				packv(clientManager::bufferTxt,user.data(),user.size());
-				pack(clientManager::bufferTxt,txt.size());
-				packv(clientManager::bufferTxt,txt.data(),txt.size());
-			}break;
-			default:
-			{
-				ERRLOG("Mensaje recibido no válido\n");
-				
-			}break;
-		}
-		clientManager::cerrojoBuffers.unlock();
-		
-	//repetir
-	}
-	cout<<"Cierre de hilo recepcion de paquetes\n";
+static void sigint_handler(int){
+    if (g_sock>=0){
+        std::cout<<"\n[Enviando logout...]\n";
+        clientManager::enviaLogout(g_sock, g_user);
+    }
+    running = false;
 }
 
- 
+int main(int argc, char** argv){
+    // Uso: client <host> <port>
+    if (argc<3){ std::cerr<<"Uso: client <host> <port>\n"; return 1; }
+    std::string host = argv[1]; int port = std::stoi(argv[2]);
 
-void chat(int serverId, string userName)
-{
- bool salir= false;
- string mensajeLeido;
- string mensajesRecibidos;
- //pedir nombre de usuario
- cout<<"Cliente conectado, introduzca usuario \n";
- cin>>userName;	
- //mientras no salir
- //enviar login
- clientManager::enviaLogin(serverId, userName);
+    std::signal(SIGINT, sigint_handler);
 
- while(!salir){
-	 //pedir mensaje a usuario
-	cout<<"Introduzca el mensaje para el servidor\n";
-	//leerlo
-	getline(cin,mensajeLeido);
-	salir=(mensajeLeido=="salir");//TODO
-	 //si no es salir
-	 
-	if(!salir){		 
-		//enviar mensaje
-		clientManager::enviaMensaje(serverId,mensajeLeido);
-	}
- }
- 
-}
- 
-int main(int argc,char** argv)
-{
-	string nombreUsuario="";
-	cout<<"Inicio conexión cliente\n";
-	auto serverConnID=initClient("127.0.0.1",1250);
+    std::cout<<"Cliente conectado, introduzca usuario:\n";
+    std::getline(std::cin, g_user);
+    if (g_user.empty()) g_user = "user";
 
-	//crear hilos de gestión de mensajes:
-	thread* th=new thread(leerMensajeTextoExternos,serverConnID.serverId);
-	thread* th2=new thread(recibePaquetesAsync,serverConnID.serverId);
+    auto conn = initClient(host, port);
+    if (conn.socket<0){ std::cerr<<"No se pudo conectar\n"; return 1; }
+    g_sock = conn.id;
 
-	chat(serverConnID.serverId, nombreUsuario);
-	
-	closeConnection(serverConnID.serverId);
-	return 0;
+    clientManager::enviaLogin(conn.id, g_user);
+
+    std::thread th(reader_thread, conn.id);
+
+    std::cout<<"Comandos disponibles:\n";
+    std::cout<<"  /pm <usuario> <mensaje> - Enviar mensaje privado\n";
+    std::cout<<"  /logout - Desconectarse\n";
+    std::cout<<"  Cualquier otro texto - Mensaje público\n\n";
+
+    std::string line;
+    while(running && std::getline(std::cin, line)){
+        if (line.empty()) continue;
+
+        if (line == "/logout"){
+            std::cout<<"Desconectando...\n";
+            clientManager::enviaLogout(conn.id, g_user);
+            running = false;
+            break;
+        } else if (line.rfind("/pm ",0)==0){
+            auto sp = line.find(' ',4);
+            if (sp==std::string::npos){
+                std::cout<<"Uso: /pm <destinatario> <mensaje>\n";
+                continue;
+            }
+            std::string to = line.substr(4, sp-4);
+            std::string txt = line.substr(sp+1);
+            if (to.empty() || txt.empty()){
+                std::cout<<"Error: destinatario o mensaje vacío\n";
+                continue;
+            }
+            std::cout<<"[Mensaje privado a " << to << "]\n";
+            clientManager::enviaMensajePrivado(conn.id, g_user, to, txt);
+        } else {
+            clientManager::enviaMensajePublico(conn.id, g_user, line);
+        }
+    }
+
+    running = false;
+    if (th.joinable()) th.join();
+    closeConnection(conn.id);
+    return 0;
 }

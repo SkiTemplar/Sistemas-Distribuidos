@@ -1,187 +1,163 @@
 #include "utils.h"
-#include <map>
-#include <thread>
+#include <list>
 #include <mutex>
 
 std::map<unsigned int,connection_t> clientList;
-unsigned int contador=0;
-bool salir=false;
-std::thread* waitForConnectionsThread;
-int lastClientSize=0;
-std::list<unsigned int> waitingClients;
-std::mutex contador_mutex;
+static unsigned int g_counter = 0;
+static std::atomic<bool> g_exit{false};
+static std::list<unsigned int> g_waiting;
+static std::mutex g_mx;
 
-int initServer(int port)
-{
-    int sock_fd;
-    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock_fd < 0)
-    {
-        printf("Error creating socket\n");
-    }
-    struct sockaddr_in serv_addr;
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(port);
+// Función para permitir el cierre del servidor desde el exterior
+void setServerExit() { g_exit = true; }
 
-    int option = 1;
-    setsockopt(sock_fd,SOL_SOCKET,
-               (SO_REUSEPORT | SO_REUSEADDR),
-               &option,sizeof(option));
+int initServer(int port){
+    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_fd < 0) { perror("socket"); return -1; }
 
-    if (bind(sock_fd,(struct sockaddr * ) &serv_addr,
-             sizeof(serv_addr)) < 0)
-        printf("ERROR on binding");
-    listen(sock_fd,5);
+    int opt = 1;
+    setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    waitForConnectionsThread=new std::thread(waitForConnectionsAsync,sock_fd);
+    sockaddr_in serv{}; serv.sin_family = AF_INET;
+    serv.sin_addr.s_addr = INADDR_ANY;
+    serv.sin_port = htons(port);
+
+    if (bind(sock_fd, (sockaddr*)&serv, sizeof(serv)) < 0){ perror("bind"); return -1; }
+    if (listen(sock_fd, 16) < 0){ perror("listen"); return -1; }
+
+    std::thread(waitForConnectionsAsync, sock_fd).detach();
     return sock_fd;
 }
 
-
-
-connection_t initClient(std::string host, int port)
-{
-    int sock_out = 0;
-    struct sockaddr_in serv_addr;
-    connection_t connection;
-    if ((sock_out = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        printf("\n Socket creation error \n");
-        connection.socket=-1;
-        connection.alive=false;
-        return connection;
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, host.c_str(), &serv_addr.sin_addr)<=0)
-    {
-        printf("\nInvalid address/ Address not supported \n");
-        connection.socket=-1;
-        connection.alive=false;
-        return connection;
-    }
-
-    if (connect(sock_out, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        printf("\nConnection Failed \n");
-        connection.socket=-1;
-        connection.alive=false;
-        return connection;
-    }
-    
-    unsigned int localID=-1;
-
-    connection.id=localID;
-    connection.socket=sock_out;
-    connection.buffer=new std::list<msg_t*>();
-    contador_mutex.lock();
-      connection.serverId=contador;
-      clientList[contador]=connection;
-      contador++;
-    contador_mutex.unlock();
-    return connection;
-}
-
-
-void waitForConnectionsAsync(int server_fd)
-{
-    while(!salir)
-    {
-        int newSocket=waitForConnections(server_fd);
+void waitForConnectionsAsync(int server_fd){
+    while(!g_exit){
+        int result = waitForConnections(server_fd);
+        if(result < 0) {
+            usleep(100000); // Esperar si hay error de accept()
+        }
     }
 }
 
 int waitForConnections(int sock_fd){
-    struct sockaddr_in cli_addr;
-    socklen_t clilen = sizeof(cli_addr);
-    int newsock_fd = accept(sock_fd,
-                            (struct sockaddr * ) &cli_addr,
-                            &clilen);
-    connection_t client;
-    contador_mutex.lock();
-     client.id=contador;
-     contador++;
-    contador_mutex.unlock();
+    sockaddr_in cli{}; socklen_t len = sizeof(cli);
 
-    client.alive=true;
-    client.socket=newsock_fd;
-    client.buffer=new std::list<msg_t*>();
-    clientList[client.id]=client;
+    // Hacer accept no bloqueante o con timeout
+    struct timeval tv;
+    tv.tv_sec = 1;  // 1 segundo de timeout
+    tv.tv_usec = 0;
+    setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
-    waitingClients.push_back(client.id);
+    int newsock = accept(sock_fd, (sockaddr*)&cli, &len);
+    if (newsock < 0) {
+        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+            return -1; // Timeout, no hay conexión pendiente
+        }
+        return -1;
+    }
 
-    return newsock_fd;
+    connection_t c{};
+    {
+        std::lock_guard<std::mutex> lk(g_mx);
+        c.id = g_counter++;
+    }
+    c.alive = true; c.socket = newsock; c.buffer = new std::list<msg_t*>();
+    clientList[c.id] = c;
+
+    {
+        std::lock_guard<std::mutex> lk(g_mx);
+        g_waiting.push_back(c.id);
+    }
+    return newsock;
+}
+
+bool checkClient(){
+    std::lock_guard<std::mutex> lk(g_mx);
+    return !g_waiting.empty();
+}
+
+int getLastClientID(){
+    std::lock_guard<std::mutex> lk(g_mx);
+    if(g_waiting.empty()) return -1;
+    int id = g_waiting.back();
+    g_waiting.pop_back();
+    return id;
+}
+
+int getNumClients(){
+    std::lock_guard<std::mutex> lk(g_mx);
+    return (int)clientList.size();
 }
 
 void closeConnection(int clientID){
-    connection_t connection=clientList[clientID];
-    close(connection.socket);
-    connection.alive=false;
-
-    if(checkPendingMessages(clientID))
-    {
-      printf("ERROR: unread messages from %d\n",connection.id );
-      for(std::list<msg_t*>::iterator t=connection.buffer->begin();
-          t!=connection.buffer->end();t++)
-      {
-          msg_t* msg=*t;
-          delete[] msg->data;
-          delete[] msg;
-      }
-      delete connection.buffer;
-
+    std::lock_guard<std::mutex> lk(g_mx);
+    if (!clientList.count(clientID)) return;
+    connection_t c = clientList[clientID];
+    if (c.socket >= 0) close(c.socket);
+    c.alive = false;
+    if (c.buffer){
+        for (auto* m : *c.buffer){ delete[] m->data; delete m; }
+        delete c.buffer;
     }
-        clientList.erase(clientID);
+    clientList.erase(clientID);
 }
 
+// ===== raw framed I/O =====
+template<typename T>
+void recvMSG(int clientID, std::vector<T>& data){
+    std::lock_guard<std::mutex> lk(g_mx);
+    if (!clientList.count(clientID) || !clientList[clientID].alive) {
+        data.clear();
+        return;
+    }
 
-/** funciones asíncronas **/
+    int sock = clientList[clientID].socket;
+    if (sock < 0) {
+        data.clear();
+        return;
+    }
 
-void recvMSGAsync(connection_t connection){
+    int bytes = 0;
+    int r = read(sock, &bytes, sizeof(int));
+    if (r<=0 || bytes<=0){
+        data.clear();
+        return;
+    }
 
-    while(connection.alive){
-        msg_t* msg=new msg_t[1];
-        std::vector<unsigned char> data;
-        recvMSG<unsigned char>(connection.socket, data);
-        msg->data=new unsigned char[data.size()];
-        memcpy(msg->data,data.data(),data.size());
-        msg->size=data.size();
-        connection.buffer->push_back(msg);
+    int n = bytes / (int)sizeof(T);
+    data.resize(n);
+    int remaining = bytes;
+    char* dst = (char*)data.data();
+    while(remaining>0){
+        int got = read(sock, dst + (bytes-remaining), remaining);
+        if (got<=0) break;
+        remaining -= got;
+    }
+    if (remaining!=0) data.clear();
+}
+
+template<typename T>
+void sendMSG(int clientID, std::vector<T>& data){
+    std::lock_guard<std::mutex> lk(g_mx);
+    if (!clientList.count(clientID) || !clientList[clientID].alive) {
+        return;
+    }
+
+    int sock = clientList[clientID].socket;
+    if (sock < 0) return;
+
+    int bytes = (int)(data.size()*sizeof(T));
+    int sent = write(sock, &bytes, sizeof(int));
+    if (sent <= 0) return;
+
+    if (bytes>0) {
+        sent = write(sock, data.data(), bytes);
+        if (sent <= 0) return;
     }
 }
 
-bool checkPendingMessages(int clientID)
-{
-    return clientList[clientID].buffer->size()>0 ;
-}
+// explicit instantiations
+template void recvMSG<unsigned char>(int, std::vector<unsigned char>&);
+template void sendMSG<unsigned char>(int, std::vector<unsigned char>&);
 
-
-
-
-bool checkClient()
-{
-    return waitingClients.size()>0;
-
-}
-
-int getNumClients()
-{
-    return clientList.size();
-}
-
-int getClientID(int numClient)
-{
-    return clientList[numClient].id;
-
-}
-
-int getLastClientID()
-{
-    int id=waitingClients.back();
-    waitingClients.pop_back();
-    return id;
-}
+template<typename T>
+void getMSG(int, std::vector<T>&) { /* no usado en esta versión */ }

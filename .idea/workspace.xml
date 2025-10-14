@@ -3,6 +3,9 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="BackendCodeEditorMiscSettings">
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+  </component>
   <component name="CMakePresetLoader">{
   &quot;useNewFormat&quot;: true
 }</component>
@@ -25,16 +28,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2bb71e0e-0523-4038-a71f-408846d08f32" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.edit.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/client.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/client.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/server.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.h" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,6 +74,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.RadMigrateCodeStyle": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
@@ -86,17 +90,17 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "CPPToolchains",
+    "settings.editor.selected.configurable": "web.server",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="CMake Application.Client1">
-    <configuration name="Client1" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="client" TARGET_NAME="client" CONFIG_NAME="Debug-EC2" RUN_TARGET_PROJECT_NAME="client" RUN_TARGET_NAME="client">
+  <component name="RunManager" selected="CMake Application.client">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="client" TARGET_NAME="client" CONFIG_NAME="Debug-EC2" RUN_TARGET_PROJECT_NAME="client" RUN_TARGET_NAME="client">
+    <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="127.0.0.1 5555" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="client" TARGET_NAME="client" CONFIG_NAME="Debug-EC2" RUN_TARGET_PROJECT_NAME="client" RUN_TARGET_NAME="client">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -109,7 +113,6 @@
     <list>
       <item itemvalue="CMake Application.client" />
       <item itemvalue="CMake Application.server" />
-      <item itemvalue="CMake Application.Client1" />
     </list>
   </component>
   <component name="TaskManager">
@@ -123,6 +126,8 @@
       <workItem from="1760291804786" duration="88000" />
       <workItem from="1760294608461" duration="1435000" />
       <workItem from="1760306543795" duration="48000" />
+      <workItem from="1760354134707" duration="295000" />
+      <workItem from="1760362545269" duration="3447000" />
     </task>
     <servers />
   </component>
