@@ -1,102 +1,97 @@
-#include "utils.h"
-#include "clientManager.h"
 #include <iostream>
 #include <thread>
+#include <string>
 #include <atomic>
-#include <csignal>
+#include <cstring>
 
-static std::atomic<bool> running{true};
-static int g_sock = -1;
-static std::string g_user;
+#ifdef _WIN32
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+  typedef SOCKET sock_t;
+  #pragma comment(lib, "ws2_32.lib")
+#else
+  #include <sys/types.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #include <unistd.h>
+  typedef int sock_t;
+  #define INVALID_SOCKET -1
+#endif
 
-static void reader_thread(int id){
-    while(running){
-        std::vector<unsigned char> buf;
-        recvMSG<unsigned char>(id, buf);
-        if (buf.empty()) { usleep(10000); continue; }
-        int type = unpack<int>(buf);
+#ifdef _WIN32
+void init_sockets(){ WSADATA wsa; WSAStartup(MAKEWORD(2,2), &wsa); }
+void cleanup_sockets(){ WSACleanup(); }
+void close_socket(sock_t s){ closesocket(s); }
+#else
+void init_sockets(){}
+void cleanup_sockets(){}
+void close_socket(sock_t s){ close(s); }
+#endif
 
-        if (type == clientManager::texto){
-            std::string from = clientManager::desempaquetaTipoTexto(buf);
-            std::string txt  = clientManager::desempaquetaTipoTexto(buf);
-            std::cout<<from<<" dice: "<<txt<<"\n";
-        } else if (type == clientManager::shutdown_){
-            (void)clientManager::desempaquetaTipoTexto(buf); // from
-            (void)clientManager::desempaquetaTipoTexto(buf); // txt
-            std::cout<<"[Servidor apagándose]\n";
-            running = false;
-        } else if (type == clientManager::ack){
-            // Almacenar el ACK para que las funciones de envío puedan procesarlo
-            std::lock_guard<std::mutex> lk(clientManager::cerrojoBuffers);
-            clientManager::bufferAcks.clear();
-            pack<int>(clientManager::bufferAcks, type);
-        }
-        // ACK implícito del servidor ya gestionado por él
-    }
+ssize_t sock_recv(sock_t s, char* buf, size_t len){
+#ifdef _WIN32
+  return recv(s, buf, (int)len, 0);
+#else
+  return recv(s, buf, len, 0);
+#endif
 }
 
-static void sigint_handler(int){
-    if (g_sock>=0){
-        std::cout<<"\n[Enviando logout...]\n";
-        clientManager::enviaLogout(g_sock, g_user);
-    }
-    running = false;
+ssize_t sock_send(sock_t s, const char* buf, size_t len){
+#ifdef _WIN32
+  return send(s, buf, (int)len, 0);
+#else
+  return send(s, buf, len, 0);
+#endif
 }
 
 int main(int argc, char** argv){
-    // Uso: client <host> <port>
-    if (argc<3){ std::cerr<<"Uso: client <host> <port>\n"; return 1; }
-    std::string host = argv[1]; int port = std::stoi(argv[2]);
+    if (argc < 3){ std::cerr << "Uso: client <host> <port>\n"; return 1; }
+    std::string host = argv[1];
+    int port = std::stoi(argv[2]);
 
-    std::signal(SIGINT, sigint_handler);
+    init_sockets();
 
-    std::cout<<"Cliente conectado, introduzca usuario:\n";
-    std::getline(std::cin, g_user);
-    if (g_user.empty()) g_user = "user";
+    sock_t s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s == INVALID_SOCKET){ std::cerr << "No se pudo crear socket\n"; return 1; }
 
-    auto conn = initClient(host, port);
-    if (conn.socket<0){ std::cerr<<"No se pudo conectar\n"; return 1; }
-    g_sock = conn.id;
+    sockaddr_in serv;
+    std::memset(&serv, 0, sizeof(serv));
+    serv.sin_family = AF_INET;
+    serv.sin_port = htons(port);
+    inet_pton(AF_INET, host.c_str(), &serv.sin_addr);
 
-    clientManager::enviaLogin(conn.id, g_user);
+    if (connect(s, (sockaddr*)&serv, sizeof(serv)) != 0){
+        std::cerr << "No se pudo conectar\n";
+        close_socket(s);
+        return 1;
+    }
 
-    std::thread th(reader_thread, conn.id);
+    std::atomic<bool> running(true);
 
-    std::cout<<"Comandos disponibles:\n";
-    std::cout<<"  /pm <usuario> <mensaje> - Enviar mensaje privado\n";
-    std::cout<<"  /logout - Desconectarse\n";
-    std::cout<<"  Cualquier otro texto - Mensaje público\n\n";
+    std::thread reader([&](){
+        char buf[1024];
+        while(running){
+            ssize_t r = sock_recv(s, buf, sizeof(buf));
+            if (r <= 0) break;
+            std::string msg(buf, buf + r);
+            std::cout << msg;
+        }
+        running = false;
+    });
 
     std::string line;
     while(running && std::getline(std::cin, line)){
         if (line.empty()) continue;
-
-        if (line == "/logout"){
-            std::cout<<"Desconectando...\n";
-            clientManager::enviaLogout(conn.id, g_user);
-            running = false;
-            break;
-        } else if (line.rfind("/pm ",0)==0){
-            auto sp = line.find(' ',4);
-            if (sp==std::string::npos){
-                std::cout<<"Uso: /pm <destinatario> <mensaje>\n";
-                continue;
-            }
-            std::string to = line.substr(4, sp-4);
-            std::string txt = line.substr(sp+1);
-            if (to.empty() || txt.empty()){
-                std::cout<<"Error: destinatario o mensaje vacío\n";
-                continue;
-            }
-            std::cout<<"[Mensaje privado a " << to << "]\n";
-            clientManager::enviaMensajePrivado(conn.id, g_user, to, txt);
-        } else {
-            clientManager::enviaMensajePublico(conn.id, g_user, line);
-        }
+        std::string tosend = line + "\n";
+        sock_send(s, tosend.c_str(), tosend.size());
+        if (line == "exit") break;
     }
 
     running = false;
-    if (th.joinable()) th.join();
-    closeConnection(conn.id);
+    close_socket(s);
+    if (reader.joinable()) reader.join();
+    cleanup_sockets();
     return 0;
 }
+

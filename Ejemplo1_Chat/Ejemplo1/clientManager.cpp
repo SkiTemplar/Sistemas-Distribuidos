@@ -1,170 +1,155 @@
 #include "clientManager.h"
-#include <iostream>
-#include <thread>
+#include "utils.h"
 
-// ===== util común =====
-static void packString(std::vector<unsigned char>& buf, const std::string& s){
-    pack<long int>(buf, (long int)s.size());
-    if (!s.empty()) packv(buf, s.data(), (int)s.size());
-}
-static std::string unpackString(std::vector<unsigned char>& buf){
-    std::string s;
-    s.resize(unpack<long int>(buf));
-    if (!s.empty()) unpackv(buf, (char*)s.data(), (int)s.size());
-    return s;
-}
-std::string clientManager::desempaquetaTipoTexto(std::vector<unsigned char>& b){ return unpackString(b); }
 
-// ===== CLIENTE =====
-void clientManager::enviaLogin(int id, const std::string& user){
-    std::vector<unsigned char> buf;
-    pack<int>(buf, login);
-    packString(buf, user);
-    sendMSG(id, buf);
-    // Esperar ACK
-    for(int i = 0; i < 100 && bufferAcks.size() == 0; i++) usleep(10000);
-    if(bufferAcks.size() > 0){
-        std::lock_guard<std::mutex> lk(cerrojoBuffers);
-        (void)unpack<int>(bufferAcks);
-        bufferAcks.clear();
-    }
+
+
+void clientManager::enviaMensaje(int id, string mensaje)
+{
+	vector<unsigned char> buffer; //para crear un paquete de datos
+	//empaquetar tipo
+	pack(buffer,texto);
+	//empaquetar datos
+		//empaquetar tamaño de string
+	pack(buffer,mensaje.size());
+			//empaquetar datos de string
+	packv(buffer,mensaje.data(),mensaje.size());
+		//enviar datos
+	sendMSG(id,buffer);
+	//recibir respuesta
+		//limpiar buffer
+	//consultar ack
+	while(bufferAcks.size()==0) usleep(100); //espera semidurmiente
+	//leer ack
+	cerrojoBuffers.lock();
+	if(unpack<int>(bufferAcks)!= ack)
+		cout<<"Error enviando mensaje\n";
+	cerrojoBuffers.unlock();
 }
 
-void clientManager::enviaLogout(int id, const std::string& user){
-    std::vector<unsigned char> buf;
-    pack<int>(buf, exit_);
-    packString(buf, user);
-    sendMSG(id, buf);
-    // Esperar ACK del logout
-    for(int i = 0; i < 50 && bufferAcks.size() == 0; i++) usleep(10000);
-    if(bufferAcks.size() > 0){
-        std::lock_guard<std::mutex> lk(cerrojoBuffers);
-        (void)unpack<int>(bufferAcks);
-        bufferAcks.clear();
-    }
+string clientManager::desempaquetaTipoTexto(vector<unsigned char> &buffer){
+
+	string mensaje;
+	//para crear un paquete de datos
+	mensaje.resize(unpack<long int>(buffer));
+	unpackv(buffer,(char*)mensaje.data(),mensaje.size());
+	return mensaje;
 }
 
-void clientManager::enviaMensajePublico(int id, const std::string& user, const std::string& msg){
-    std::vector<unsigned char> buf;
-    pack<int>(buf, texto);
-    packString(buf, user);
-    packString(buf, msg);
-    sendMSG(id, buf);
-    // Esperar ACK
-    for(int i = 0; i < 100 && bufferAcks.size() == 0; i++) usleep(10000);
-    if(bufferAcks.size() > 0){
-        std::lock_guard<std::mutex> lk(cerrojoBuffers);
-        (void)unpack<int>(bufferAcks);
-        bufferAcks.clear();
-    }
+void clientManager::enviaLogin(int id, string userName){
+
+	//buffer datos
+	vector<unsigned char> buffer;
+	//empaquetar tipo de mensaje
+	pack(buffer,login);
+	//empaquetar metadato
+	pack(buffer,userName.size());
+	//dato
+	packv(buffer, userName.data(),userName.size());
+	//enviar
+	sendMSG(id,buffer);
+	//consultar ack
+	while(bufferAcks.size()==0) usleep(100); //espera semidurmiente
+	//leer ack
+	cerrojoBuffers.lock();
+	if(unpack<int>(bufferAcks)!= ack)
+		cout<<"Error enviando mensaje\n";
+	cerrojoBuffers.unlock();
+
 }
 
-void clientManager::enviaMensajePrivado(int id, const std::string& from, const std::string& to, const std::string& msg){
-    std::vector<unsigned char> buf;
-    pack<int>(buf, priv_);
-    packString(buf, from);
-    packString(buf, to);
-    packString(buf, msg);
-    sendMSG(id, buf);
-    // Esperar ACK
-    for(int i = 0; i < 100 && bufferAcks.size() == 0; i++) usleep(10000);
-    if(bufferAcks.size() > 0){
-        std::lock_guard<std::mutex> lk(cerrojoBuffers);
-        (void)unpack<int>(bufferAcks);
-        bufferAcks.clear();
-    }
+
+void clientManager::atiendeCliente(int clientID)
+{
+	vector<unsigned char> bufferIn;
+	bool salir=false;
+	string userName="default";
+	while(!salir){
+		//recibe paquete datos
+		recvMSG(clientID,bufferIn);
+		//desempaquetar tipo paquete
+		msgTypes type=unpack<msgTypes>(bufferIn);
+		//dependiendo de tipo
+		switch(type){
+			//tipo texto
+			case texto:{
+				//desempaquetar mensaje
+				string msg=desempaquetaTipoTexto(bufferIn);
+				//reenviar
+				reenviaTexto(userName,msg);
+			}break;
+			//tipo exit
+			case exit:{
+				//eliminar usuario
+				connectionIds.erase(userName);
+				//cerrar conexión
+				salir=true;
+			}break;//tipo login
+			case login:{
+				//desempaquetar usuario
+				userName=desempaquetaTipoTexto(bufferIn);
+				//añadir si no existe
+				if(connectionIds.find(userName)==connectionIds.end())
+					connectionIds[userName]=clientID;
+				else
+					salir=true;
+			}break;
+			default:{
+			//cualquier otro tipo
+				ERRLOG ("tipo mensaje no válido");
+				//eliminar usuario
+				connectionIds.erase(userName);
+				//cerrar conexión
+				salir=true;
+			}break;
+		};
+
+		//limpiar buffer
+		bufferIn.clear();
+		//enviar ack
+		pack(bufferIn,ack);
+		sendMSG(clientID,bufferIn);
+	}
+	closeConnection(clientID);
 }
 
-// ===== SERVIDOR =====
-void clientManager::reenviaPublico(const std::string& from, const std::string& msg){
-    std::vector<unsigned char> out;
-    pack<int>(out, texto);
-    packString(out, from);
-    packString(out, msg);
-    for (auto& kv : connectionIds) {
-        if(kv.second >= 0) sendMSG(kv.second, out);
-    }
+void clientManager::reenviaTexto(string userName, string msg)
+{
+	//empaquetar mensaje
+	vector<unsigned char> bufferOut;
+	pack(bufferOut,texto); //tipo
+	pack(bufferOut,userName.size());
+	packv(bufferOut,userName.data(),userName.size());
+	pack(bufferOut,msg.size());
+	packv(bufferOut,msg.data(),msg.size());
+
+	//por cada cliente conectado
+	for(  auto client  : connectionIds){
+		//reenviar paquete
+			//si no soy el emisor
+		if(client.first!=userName)
+			sendMSG(client.second,bufferOut);
+	}
+	bufferOut.clear();//opcional
+
 }
 
-void clientManager::reenviaPrivado(const std::string& to, const std::string& from, const std::string& msg){
-    auto it = connectionIds.find(to);
-    if (it == connectionIds.end()) {
-        std::cout<<"[SERVIDOR] Usuario " << to << " no encontrado para mensaje privado de " << from << "\n";
-        return;
-    }
-    std::vector<unsigned char> out;
-    pack<int>(out, texto);
-    packString(out, from + " (privado)");
-    packString(out, msg);
-    sendMSG(it->second, out);
-    std::cout<<"[SERVIDOR] Mensaje privado de " << from << " a " << to << "\n";
-}
+string clientManager::recibeMensaje(int serverId){
 
-void clientManager::atiendeCliente(int clientID){
-    std::vector<unsigned char> in;
-    bool salir=false;
-    std::string user="desconocido";
+	//recibir mensaje
+	string userName;
+	string mensaje;
+    vector<unsigned char> buffer;
 
-    while(!salir && !cierreDePrograma){
-        recvMSG<unsigned char>(clientID, in);
-        if (in.empty()){
-            usleep(10000);
-            continue;
-        }
+	recvMSG(serverId,buffer);
+	//desempaquetar mensaje reenviado
+		//desepaquetar tipo
+	msgTypes type=unpack<msgTypes>(buffer);
+		//username
+	userName=desempaquetaTipoTexto(buffer);
+		//mensaje
+	mensaje=desempaquetaTipoTexto(buffer);
 
-        int type = unpack<int>(in);
+	return userName+":"+mensaje;
 
-        switch(type){
-            case login:{
-                user = unpackString(in);
-                std::cout<<"[SERVIDOR] Login de usuario: " << user << "\n";
-                if (!connectionIds.count(user)) {
-                    connectionIds[user] = clientID;
-                    std::cout<<"[SERVIDOR] Usuario " << user << " conectado (ID: " << clientID << ")\n";
-                } else {
-                    std::cout<<"[SERVIDOR] Usuario " << user << " ya existe, rechazando conexión\n";
-                    salir = true;
-                }
-            }break;
-
-            case texto:{
-                std::string from = unpackString(in);
-                std::string msg  = unpackString(in);
-                std::cout<<"[SERVIDOR] Mensaje público de " << from << ": " << msg << "\n";
-                reenviaPublico(from, msg);
-            }break;
-
-            case priv_:{
-                std::string from = unpackString(in);
-                std::string to   = unpackString(in);
-                std::string msg  = unpackString(in);
-                std::cout<<"[SERVIDOR] Mensaje privado de " << from << " a " << to << ": " << msg << "\n";
-                reenviaPrivado(to, from, msg);
-            }break;
-
-            case exit_:{
-                std::string exitUser = unpackString(in);
-                std::cout<<"[SERVIDOR] Logout de usuario: " << exitUser << "\n";
-                connectionIds.erase(exitUser);
-                salir = true;
-            }break;
-
-            default:{
-                std::cout<<"[SERVIDOR] Tipo de mensaje desconocido: " << type << "\n";
-                connectionIds.erase(user);
-                salir = true;
-            }break;
-        }
-
-        in.clear();
-        // Enviar ACK
-        std::vector<unsigned char> ackbuf;
-        pack<int>(ackbuf, ack);
-        sendMSG(clientID, ackbuf);
-    }
-
-    // Limpiar al salir
-    connectionIds.erase(user);
-    std::cout<<"[SERVIDOR] Cliente " << user << " (ID: " << clientID << ") desconectado\n";
-    closeConnection(clientID);
-}
+}//recibir un mensaje

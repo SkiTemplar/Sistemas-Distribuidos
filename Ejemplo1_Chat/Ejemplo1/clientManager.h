@@ -1,44 +1,38 @@
 #include "utils.h"
+#include <iostream>
 #include <string>
 #include <map>
 #include <vector>
-#include <mutex>
 
-#ifndef CLIENT_MANAGER_H
-#define CLIENT_MANAGER_H
+#define ERRLOG(msg) cout<<"Error "<<__FILE__<<":"<<__LINE__<<" "<<msg<<" \n"
 
-struct Packet {
-	int type;              // ver MsgType
-	std::string from;
-	std::string to;        // vacío si público
-	std::string text;      // cuerpo
-};
+using namespace std;
+
 
 class clientManager{
+
 public:
-	enum MsgType { texto=0, exit_=1, login=2, ack=3, priv_=4, shutdown_=5 };
 
+	typedef enum{
+		texto=0,
+		exit=1,
+		login=2,
+		ack=3
+	}msgTypes;
+
+	//variable de cierre de programa:
 	static inline bool cierreDePrograma=false;
+	//recepción asincrona de paquetes en cliente
+	static inline mutex cerrojoBuffers;
+	static inline vector<unsigned char> bufferAcks;
+	static inline vector<unsigned char> bufferTxt;
 
-	// buffers cliente
-	static inline std::mutex cerrojoBuffers;
-	static inline std::vector<unsigned char> bufferAcks;
-	static inline std::vector<unsigned char> bufferTxt;
-
-	// directorio usuarios en servidor
-	static inline std::map<std::string,int> connectionIds;
-
-	// cliente
-	static void enviaLogin(int id, const std::string& user);
-	static void enviaLogout(int id, const std::string& user);
-	static void enviaMensajePublico(int id, const std::string& user, const std::string& msg);
-	static void enviaMensajePrivado(int id, const std::string& from, const std::string& to, const std::string& msg);
-	static std::string desempaquetaTipoTexto(std::vector<unsigned char>& buffer);
-
-	// servidor
+	static inline map<string,int> connectionIds;
+	static void enviaMensaje(int id, string mensaje);
+	static string desempaquetaTipoTexto(vector<unsigned char> &buffer);
+	static void enviaLogin(int id, string userName);
 	static void atiendeCliente(int clientId);
-	static void reenviaPublico(const std::string& from, const std::string& msg);
-	static void reenviaPrivado(const std::string& to, const std::string& from, const std::string& msg);
-};
+	static string recibeMensaje(int serverId);
+	static void reenviaTexto(string userName, string msg);
 
-#endif
+};
