@@ -16,10 +16,7 @@
     <option name="reloaded" value="true" />
   </component>
   <component name="CMakeRunConfigurationManager">
-    <generated>
-      <config projectName="Chat" targetName="client" />
-      <config projectName="Chat" targetName="server" />
-    </generated>
+    <generated />
   </component>
   <component name="CMakeSettings">
     <configurations>
@@ -27,17 +24,17 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2bb71e0e-0523-4038-a71f-408846d08f32" name="Changes" comment="">
+    <list default="true" id="2bb71e0e-0523-4038-a71f-408846d08f32" name="Changes" comment="Final version">
       <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/Client__localhost_3000_.xml" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/Server__port_3000_.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/client.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/client.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/server.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.h" beforeDir="false" afterPath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/client.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/server.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.h" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,6 +48,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "SkiTemplar"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/SkiTemplar/Entrega1.git",
+    "accountId": "a4c7b733-391e-4f1c-8ff8-c4812c9be6bb"
+  }
+}]]></component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
     <option name="majorVersion" value="2025" />
@@ -106,12 +115,12 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="127.0.0.1 3000" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Chat" TARGET_NAME="client" CONFIG_NAME="Debug-EC2" RUN_TARGET_PROJECT_NAME="Chat" RUN_TARGET_NAME="client">
+    <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="127.0.0.1 3000" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Project" TARGET_NAME="client" CONFIG_NAME="Debug-EC2" RUN_TARGET_PROJECT_NAME="Project" RUN_TARGET_NAME="client">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="server" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="3000" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Chat" TARGET_NAME="server" CONFIG_NAME="Debug-EC2" RUN_TARGET_PROJECT_NAME="Chat" RUN_TARGET_NAME="server">
+    <configuration name="server" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="3000" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Project" TARGET_NAME="server" CONFIG_NAME="Debug-EC2" RUN_TARGET_PROJECT_NAME="Project" RUN_TARGET_NAME="server">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -134,8 +143,17 @@
       <workItem from="1760306543795" duration="48000" />
       <workItem from="1760354134707" duration="295000" />
       <workItem from="1760362545269" duration="3447000" />
-      <workItem from="1760699655370" duration="2134000" />
+      <workItem from="1760699655370" duration="2497000" />
     </task>
+    <task id="LOCAL-00001" summary="Final version">
+      <option name="closed" value="true" />
+      <created>1760701966163</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1760701966163</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -156,6 +174,12 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="2.0" />
+    <MESSAGE value="new" />
+    <MESSAGE value="Final version" />
+    <option name="LAST_COMMIT_MESSAGE" value="Final version" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
