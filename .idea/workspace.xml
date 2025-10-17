@@ -25,16 +25,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2bb71e0e-0523-4038-a71f-408846d08f32" name="Changes" comment="Final version">
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/Client__localhost_3000_.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/Server__port_3000_.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/CMakeLists.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/client.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/clientManager.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/server.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ejemplo1_Chat/Ejemplo1/utils.h" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -143,7 +134,7 @@
       <workItem from="1760306543795" duration="48000" />
       <workItem from="1760354134707" duration="295000" />
       <workItem from="1760362545269" duration="3447000" />
-      <workItem from="1760699655370" duration="2497000" />
+      <workItem from="1760699655370" duration="2550000" />
     </task>
     <task id="LOCAL-00001" summary="Final version">
       <option name="closed" value="true" />

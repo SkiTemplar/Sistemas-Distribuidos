@@ -1,1 +1,0 @@
-CMakeLists.txt not found in C:\Users\Rodrigo\CARRERA\Workspace\SistemasDistribuidos\Ejemplo1_Chat\Ejemplo1 Select CMakeLists.txt
